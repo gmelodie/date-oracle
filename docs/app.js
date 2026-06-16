@@ -2,6 +2,7 @@ import { ESPLoader, Transport } from "https://cdn.jsdelivr.net/npm/esptool-js@0.
 
 const MAGIC   = new TextEncoder().encode("DOIDBLOB_V01");
 const STORAGE = "dateOracle.state.v1";
+const PORT_STORAGE = "dateOracle.port.v1";
 
 const BINS = [
   { file: "firmware/bootloader.bin", addr: 0x1000 },
@@ -206,6 +207,39 @@ async function fetchBin(path) {
   return new Uint8Array(await r.arrayBuffer());
 }
 
+function rememberedPortInfo() {
+  try {
+    const s = JSON.parse(localStorage.getItem(PORT_STORAGE));
+    if (s && typeof s.usbVendorId === "number" && typeof s.usbProductId === "number") return s;
+  } catch {}
+  return null;
+}
+
+function rememberPort(port) {
+  const info = port.getInfo?.();
+  if (info && info.usbVendorId != null && info.usbProductId != null) {
+    localStorage.setItem(PORT_STORAGE, JSON.stringify({
+      usbVendorId: info.usbVendorId,
+      usbProductId: info.usbProductId,
+    }));
+  }
+}
+
+async function pickPort() {
+  const wanted = rememberedPortInfo();
+  if (wanted) {
+    const ports = await navigator.serial.getPorts();
+    const match = ports.find(p => {
+      const i = p.getInfo?.();
+      return i && i.usbVendorId === wanted.usbVendorId && i.usbProductId === wanted.usbProductId;
+    });
+    if (match) return { port: match, remembered: true };
+  }
+  const port = await navigator.serial.requestPort();
+  rememberPort(port);
+  return { port, remembered: false };
+}
+
 async function resetBoard(transport) {
   await transport.setDTR(false);
   await transport.setRTS(true);
@@ -241,7 +275,8 @@ $flash.addEventListener("click", async () => {
     }, []);
 
     setStatus("Pick the Oracle's USB port…");
-    const port = await navigator.serial.requestPort();
+    const { port, remembered } = await pickPort();
+    if (remembered) setStatus("Using last Oracle port…");
     transport = new Transport(port, true);
     const loader = new ESPLoader({ transport, baudrate: 921600, romBaudrate: 115200 });
     setStatus("Connecting…");
