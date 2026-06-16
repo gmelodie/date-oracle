@@ -2,6 +2,8 @@
 
 Random romantic date chooser for **Heltec WiFi LoRa 32 V2** (ESP32 + onboard 128x64 SSD1306 OLED). No external wiring — uses only what's on the board.
 
+Flash online using [the **web flasher**](https://gmelodie.com/date-oracle)
+
 ## Controls
 
 The V2 has two onboard buttons: **RST** (just resets the chip, don't press it during use) and **PRG** (GPIO 0), the one user input.
@@ -54,3 +56,4 @@ Port hints: macOS is usually `/dev/cu.SLAB_USBtoUART` or `/dev/cu.usbserial-*`; 
 ## Arduino IDE alternative
 
 Run `make gen` once, then open `date_oracle/date_oracle.ino`, select **Tools -> Board -> WiFi LoRa 32(V2)**, pick the port, hit Upload.
+

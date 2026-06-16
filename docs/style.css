@@ -1,0 +1,303 @@
+:root {
+  --bg:          #fdf6e3;
+  --bg-soft:     #fcecd6;
+  --card:        #fff8ec;
+  --pink-soft:   #f7c2c8;
+  --pink:        #ec9bab;
+  --pink-deep:   #d4566e;
+  --pink-press:  #b94560;
+  --gold:        #e8b86a;
+  --sage:        #95b58a;
+  --text:        #3c3836;
+  --text-muted:  #7c6f64;
+  --border:      #e6d2bb;
+  --pink-border: #f1c5cc;
+  --shadow:       0 6px 18px rgba(212, 86, 110, 0.12);
+  --shadow-hover: 0 10px 28px rgba(212, 86, 110, 0.18);
+  --radius:    14px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg-soft) 100%);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+header {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+}
+
+h1 {
+  font-family: Georgia, "Cormorant Garamond", serif;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 600;
+  margin: 0;
+  color: var(--pink-deep);
+  letter-spacing: -0.02em;
+}
+
+h1::before,
+h1::after {
+  content: "♥";
+  color: var(--pink);
+  font-size: 0.65em;
+  margin: 0 0.45em;
+  vertical-align: middle;
+}
+
+.tagline {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.25rem 3rem;
+}
+
+#categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.cat-card {
+  background: var(--card);
+  border: 1px solid var(--pink-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow 200ms, transform 200ms;
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.cat-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cat-name {
+  flex: 1;
+  font-family: Georgia, serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--pink-deep);
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed transparent;
+  padding: 0.25rem 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cat-name:focus {
+  outline: none;
+  border-bottom-color: var(--pink);
+}
+
+.cat-del,
+.item-del {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.45;
+  transition: all 150ms;
+}
+
+.cat-del:hover,
+.item-del:hover {
+  opacity: 1;
+  color: var(--pink-press);
+  background: var(--pink-soft);
+}
+
+.cat-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.cat-card li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+}
+
+.cat-card li input {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  transition: all 150ms;
+}
+
+.cat-card li input:focus {
+  outline: none;
+  border-color: var(--pink);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(247, 194, 200, 0.4);
+}
+
+.add-item {
+  margin-top: 0.3rem;
+  background: transparent;
+  color: var(--pink-deep);
+  border: 1px dashed var(--pink-border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 150ms;
+}
+
+.add-item:hover {
+  background: var(--pink-soft);
+  border-style: solid;
+  color: var(--pink-press);
+}
+
+button.ghost {
+  display: block;
+  margin: 0 auto;
+  background: transparent;
+  color: var(--pink-deep);
+  border: 2px dashed var(--pink);
+  border-radius: var(--radius);
+  padding: 0.55rem 1.2rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+button.ghost:hover {
+  background: var(--pink-soft);
+  border-style: solid;
+}
+
+#flash-section {
+  margin-top: 2.5rem;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--pink-border);
+  border-radius: var(--radius);
+  padding: 2rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.hint {
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.9rem 2.5rem;
+  font-family: Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+  transition: all 200ms;
+}
+
+button.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+button.primary:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--pink-press);
+}
+
+button.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.heart {
+  display: inline-block;
+  animation: beat 1.2s ease-in-out infinite;
+}
+
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  20%      { transform: scale(1.22); }
+  40%      { transform: scale(1); }
+}
+
+#status {
+  margin-top: 0.75rem;
+  min-height: 1.5em;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+#status.ok  { color: var(--sage);       font-weight: 600; }
+#status.err { color: var(--pink-press); font-weight: 600; }
+
+progress {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  margin: 1rem auto 0;
+  height: 0.5rem;
+  border-radius: 999px;
+  border: none;
+  overflow: hidden;
+  background: var(--pink-soft);
+  appearance: none;
+}
+
+progress::-webkit-progress-bar   { background: var(--pink-soft); border-radius: 999px; }
+progress::-webkit-progress-value { background: var(--pink-deep); border-radius: 999px; }
+progress::-moz-progress-bar      { background: var(--pink-deep); border-radius: 999px; }
+
+footer {
+  text-align: center;
+  padding: 1.5rem 1rem 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 620px;
+  margin: 0 auto;
+}

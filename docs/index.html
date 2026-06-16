@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Date Oracle</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%E2%99%A5%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <header>
+    <h1>Date Oracle</h1>
+    <p class="tagline">edit the lists, flash the magic</p>
+  </header>
+
+  <main>
+    <section id="editor">
+      <div id="categories"></div>
+      <button id="add-cat" class="ghost">+ add category</button>
+    </section>
+
+    <section id="flash-section">
+      <p class="hint">Plug the Oracle in via USB, then:</p>
+      <button id="flash" class="primary">
+        Flash Oracle <span class="heart">♥</span>
+      </button>
+      <progress id="progress" max="100" value="0" hidden></progress>
+      <div id="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Works in Chrome, Edge, Brave, Opera (Web Serial). If the browser shows no ports: install the CP210x or CH340 USB driver for your Heltec.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
