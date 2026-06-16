@@ -9,15 +9,25 @@ The V2 has two onboard buttons: **RST** (just resets the chip, don't press it du
 - **Tap PRG** -> pick from current category
 - **Hold PRG >0.7s** -> next category
 
-## Setup (once)
+## Editing the date ideas
 
-Put the sketch in a folder of the same name (Arduino requirement):
+All categories and items live in [`date_oracle/date_ideas.txt`](date_oracle/date_ideas.txt). Format is `[Category Name]` headers with one item per line; blank lines are ignored:
 
-```sh
-mkdir -p date_oracle && mv date_oracle.ino date_oracle/
+```
+[WHAT TO EAT]
+Sushi
+Pizza, obviously
+
+[DATE IDEA]
+Movie on couch
+Stargazing drive
 ```
 
-Install `arduino-cli`, then add the ESP32 core and the two display libraries:
+Up to 8 categories, 32 items each, ~4KB total. A pre-build step bakes the file into the firmware as a fixed-size blob with a magic header so the (upcoming) web flasher can patch it in place without recompiling.
+
+## Setup (once)
+
+Install `arduino-cli`, the ESP32 core, and the two display libraries:
 
 ```sh
 arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -31,14 +41,16 @@ Plug the board in and find its port:
 arduino-cli board list
 ```
 
-## Build + upload
+## Build + flash
 
 ```sh
-arduino-cli compile --fqbn esp32:esp32:heltec_wifi_lora_32_V2 --upload -p /dev/ttyUSB0 date_oracle
+make flash PORT=/dev/ttyUSB0
 ```
 
-Swap `/dev/ttyUSB0` for whatever `board list` showed (macOS is usually `/dev/cu.SLAB_USBtoUART` or `/dev/cu.usbserial-*`).
+`make` regenerates `date_ideas_data.h` from `date_ideas.txt` whenever the txt changes, then compiles and uploads. Other targets: `make gen` (only regenerate the header), `make build` (compile, no upload), `make clean` (drop the generated header).
+
+Port hints: macOS is usually `/dev/cu.SLAB_USBtoUART` or `/dev/cu.usbserial-*`; Linux is `/dev/ttyUSB0`.
 
 ## Arduino IDE alternative
 
-Open `date_oracle/date_oracle.ino`, select **Tools -> Board -> WiFi LoRa 32(V2)**, pick the port, hit Upload.
+Run `make gen` once, then open `date_oracle/date_oracle.ino`, select **Tools -> Board -> WiFi LoRa 32(V2)**, pick the port, hit Upload.

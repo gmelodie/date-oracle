@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "date_ideas_data.h"
 
 #define OLED_SDA     4
 #define OLED_SCL     15
@@ -20,54 +21,65 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-const char* eat[] = {
-  "Sushi",
-  "Pizza, obviously",
-  "Tacos",
-  "That burger place",
-  "Cook together",
-  "Acai + chill",
-  "Whatever SHE wants",
-  "Surprise delivery",
-};
-
-const char* dates[] = {
-  "Movie on couch",
-  "Stargazing drive",
-  "Board game night",
-  "Walk the dog",
-  "Bake something",
-  "Mini road trip",
-  "Build LEGO",
-  "Home karaoke",
-};
-
-const char* loser[] = {
-  "...does dishes",
-  "...walks the dog",
-  "...picks the movie",
-  "...pays dinner",
-  "...gives a massage",
-  "...makes coffee 1wk",
-};
+#define MAX_CATEGORIES    8
+#define MAX_ITEMS_PER_CAT 32
 
 struct Category {
   const char* name;
-  const char** items;
-  uint8_t count;
+  const char* items[MAX_ITEMS_PER_CAT];
+  uint8_t     count;
 };
 
-Category cats[] = {
-  { "WHAT TO EAT", eat,   sizeof(eat)   / sizeof(eat[0])   },
-  { "DATE IDEA",   dates, sizeof(dates) / sizeof(dates[0]) },
-  { "LOSER...",    loser, sizeof(loser) / sizeof(loser[0]) },
-};
-const uint8_t NUM_CATS = sizeof(cats) / sizeof(cats[0]);
+Category cats[MAX_CATEGORIES];
+uint8_t  NUM_CATS = 0;
+
+static char ideasRam[IDEAS_BLOB_CAPACITY];
 
 uint8_t  curCat = 0;
-int8_t   lastPick[NUM_CATS];
+int8_t   lastPick[MAX_CATEGORIES];
 uint32_t lastAct = 0;
 bool     resultShown = false;
+
+void parseIdeas() {
+  memcpy(ideasRam, IDEAS.data, IDEAS_BLOB_CAPACITY);
+  ideasRam[IDEAS_BLOB_CAPACITY - 1] = 0;
+
+  int8_t idx = -1;
+  char* p = ideasRam;
+  while (*p) {
+    while (*p == '\n' || *p == '\r' || *p == ' ' || *p == '\t') p++;
+    if (!*p) break;
+
+    char* line = p;
+    while (*p && *p != '\n' && *p != '\r') p++;
+    if (*p) { *p = 0; p++; }
+
+    char* end = line + strlen(line);
+    while (end > line && (end[-1] == ' ' || end[-1] == '\t')) { end--; *end = 0; }
+    if (!*line) continue;
+
+    if (*line == '[') {
+      if (idx + 1 >= MAX_CATEGORIES) break;
+      idx++;
+      char* name = line + 1;
+      char* close = strchr(name, ']');
+      if (close) *close = 0;
+      cats[idx].name = name;
+      cats[idx].count = 0;
+    } else if (idx >= 0 && cats[idx].count < MAX_ITEMS_PER_CAT) {
+      cats[idx].items[cats[idx].count++] = line;
+    }
+  }
+  NUM_CATS = idx + 1;
+
+  if (NUM_CATS == 0) {
+    cats[0].name = "EMPTY";
+    cats[0].items[0] = "edit date_ideas.txt";
+    cats[0].items[1] = "or use the web app";
+    cats[0].count = 2;
+    NUM_CATS = 1;
+  }
+}
 
 void drawHeart(int16_t cx, int16_t cy, uint8_t r) {
   display.fillCircle(cx - r, cy, r, SSD1306_WHITE);
@@ -227,7 +239,8 @@ void slotReveal(uint8_t cat) {
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(FEEDBACK_LED, OUTPUT);
-  for (uint8_t i = 0; i < NUM_CATS; i++) lastPick[i] = -1;
+  parseIdeas();
+  for (uint8_t i = 0; i < MAX_CATEGORIES; i++) lastPick[i] = -1;
 
   pinMode(OLED_VEXT, OUTPUT);
   digitalWrite(OLED_VEXT, LOW);
