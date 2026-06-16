@@ -24,7 +24,10 @@
       <button id="flash" class="primary">
         Flash Oracle <span class="heart">♥</span>
       </button>
-      <progress id="progress" max="100" value="0" hidden></progress>
+      <div id="progress-wrap" hidden>
+        <progress id="progress" max="100" value="0"></progress>
+        <span id="progress-pct">0%</span>
+      </div>
       <div id="status" aria-live="polite"></div>
     </section>
   </main>

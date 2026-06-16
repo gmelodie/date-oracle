@@ -276,11 +276,25 @@ button.primary:disabled {
 #status.ok  { color: var(--sage);       font-weight: 600; }
 #status.err { color: var(--pink-press); font-weight: 600; }
 
-progress {
-  display: block;
-  width: 100%;
-  max-width: 360px;
+#progress-wrap {
   margin: 1rem auto 0;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#progress-pct {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--pink-deep);
+  font-weight: 600;
+  min-width: 3em;
+  text-align: right;
+}
+
+progress {
+  flex: 1;
   height: 0.5rem;
   border-radius: 999px;
   border: none;

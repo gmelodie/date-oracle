@@ -1,9 +1,14 @@
 import { ESPLoader, Transport } from "https://cdn.jsdelivr.net/npm/esptool-js@0.4.5/+esm";
 
-const MAGIC      = new TextEncoder().encode("DOIDBLOB_V01");
-const STORAGE    = "dateOracle.state.v1";
-const FW_PATH    = "firmware/firmware.bin";  // merged image, flashed at 0x0
-const FW_ADDR    = 0x0;
+const MAGIC   = new TextEncoder().encode("DOIDBLOB_V01");
+const STORAGE = "dateOracle.state.v1";
+
+const BINS = [
+  { file: "firmware/bootloader.bin", addr: 0x1000 },
+  { file: "firmware/partitions.bin", addr: 0x8000 },
+  { file: "firmware/boot_app0.bin",  addr: 0xe000 },
+  { file: "firmware/firmware.bin",   addr: 0x10000, patch: true },
+];
 
 const DEFAULT_STATE = {
   categories: [
@@ -38,9 +43,11 @@ function saveState() {
 
 const $cats     = document.getElementById("categories");
 const $addCat   = document.getElementById("add-cat");
-const $flash    = document.getElementById("flash");
-const $status   = document.getElementById("status");
-const $progress = document.getElementById("progress");
+const $flash       = document.getElementById("flash");
+const $status      = document.getElementById("status");
+const $progress    = document.getElementById("progress");
+const $progressPct = document.getElementById("progress-pct");
+const $progressWrap = document.getElementById("progress-wrap");
 
 function render() {
   $cats.replaceChildren();
@@ -170,10 +177,23 @@ function setStatus(msg, cls = "") {
   $status.className = cls;
 }
 
+function setProgress(pct) {
+  const v = Math.max(0, Math.min(100, pct));
+  $progress.value = v;
+  $progressPct.textContent = `${v.toFixed(0)}%`;
+}
+
 async function fetchBin(path) {
   const r = await fetch(path, { cache: "no-cache" });
   if (!r.ok) throw new Error(`fetch ${path}: ${r.status}`);
   return new Uint8Array(await r.arrayBuffer());
+}
+
+async function resetBoard(transport) {
+  await transport.setDTR(false);
+  await transport.setRTS(true);
+  await new Promise(r => setTimeout(r, 200));
+  await transport.setRTS(false);
 }
 
 $flash.addEventListener("click", async () => {
@@ -183,14 +203,25 @@ $flash.addEventListener("click", async () => {
   }
 
   $flash.disabled = true;
-  $progress.hidden = false;
-  $progress.value = 0;
+  $progressWrap.hidden = false;
+  setProgress(0);
   setStatus("Loading firmware…");
 
   let transport;
   try {
-    const fw = await fetchBin(FW_PATH);
-    patchBlob(fw, stateToText(state));
+    const files = await Promise.all(BINS.map(async b => ({
+      ...b,
+      data: await fetchBin(b.file),
+    })));
+    const text = stateToText(state);
+    for (const f of files) {
+      if (f.patch) patchBlob(f.data, text);
+    }
+    const totalBytes = files.reduce((s, f) => s + f.data.length, 0);
+    const offsets    = files.reduce((acc, f, i) => {
+      acc.push((acc[i - 1] || 0) + (files[i - 1]?.data.length || 0));
+      return acc;
+    }, []);
 
     setStatus("Pick the Oracle's USB port…");
     const port = await navigator.serial.requestPort();
@@ -200,23 +231,25 @@ $flash.addEventListener("click", async () => {
 
     setStatus("Flashing… keep the cable steady ♥");
     await loader.writeFlash({
-      fileArray: [{ data: u8ToBinStr(fw), address: FW_ADDR }],
+      fileArray: files.map(f => ({ data: u8ToBinStr(f.data), address: f.addr })),
       flashSize: "keep",
       flashMode: "keep",
       flashFreq: "keep",
       eraseAll: false,
       compress: true,
-      reportProgress: (_idx, written, total) => {
-        $progress.value = (written / total) * 100;
+      reportProgress: (idx, written, _total) => {
+        setProgress(((offsets[idx] + written) / totalBytes) * 100);
       },
       calculateMD5Hash: null,
     });
 
-    if (typeof loader.hardReset === "function") await loader.hardReset();
+    setStatus("Resetting…");
+    try { if (typeof loader.hardReset === "function") await loader.hardReset(); } catch {}
+    try { await resetBoard(transport); } catch {}
     await transport.disconnect();
 
-    $progress.value = 100;
-    setStatus("Flashed ♥ Unplug or hit RST on the board.", "ok");
+    setProgress(100);
+    setStatus("Flashed ♥ Oracle should be alive in a moment.", "ok");
   } catch (err) {
     console.error(err);
     setStatus(`Error: ${err.message || err}`, "err");

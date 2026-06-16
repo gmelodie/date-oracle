@@ -13,7 +13,7 @@ The V2 has two onboard buttons: **RST** (just resets the chip, don't press it du
 
 ## Editing the date ideas
 
-All categories and items live in [`date_oracle/date_ideas.txt`](date_oracle/date_ideas.txt). Format is `[Category Name]` headers with one item per line; blank lines are ignored:
+All categories and items live in [`ideas.txt`](ideas.txt). Format is `[Category Name]` headers with one item per line; blank lines are ignored:
 
 ```
 [WHAT TO EAT]

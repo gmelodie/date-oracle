@@ -10,8 +10,8 @@ FW_OUT    := docs/firmware
 
 gen: $(GENERATED)
 
-$(GENERATED): $(SKETCH)/date_ideas.txt $(SKETCH)/gen_ideas.py
-	python3 $(SKETCH)/gen_ideas.py
+$(GENERATED): ideas.txt gen_ideas.py
+	python3 gen_ideas.py
 
 build: $(GENERATED)
 	arduino-cli compile --fqbn $(FQBN) $(SKETCH)
@@ -22,8 +22,11 @@ flash: $(GENERATED)
 pages-bin: $(GENERATED)
 	mkdir -p $(BUILD_DIR) $(FW_OUT)
 	arduino-cli compile --fqbn $(FQBN) --output-dir $(BUILD_DIR) $(SKETCH)
-	cp $(BUILD_DIR)/$(SKETCH).ino.merged.bin $(FW_OUT)/firmware.bin
-	@printf "wrote %s (%s bytes)\n" $(FW_OUT)/firmware.bin "$$(stat -c%s $(FW_OUT)/firmware.bin 2>/dev/null || stat -f%z $(FW_OUT)/firmware.bin)"
+	cp $(BUILD_DIR)/$(SKETCH).ino.bin             $(FW_OUT)/firmware.bin
+	cp $(BUILD_DIR)/$(SKETCH).ino.bootloader.bin  $(FW_OUT)/bootloader.bin
+	cp $(BUILD_DIR)/$(SKETCH).ino.partitions.bin  $(FW_OUT)/partitions.bin
+	cp "$$(find $${HOME}/.arduino15 -name boot_app0.bin 2>/dev/null | head -1)" $(FW_OUT)/boot_app0.bin
+	@ls -la $(FW_OUT)
 
 clean:
 	rm -rf $(GENERATED) $(BUILD_DIR) $(FW_OUT)
