@@ -149,7 +149,7 @@ function findMagic(buf) {
   return -1;
 }
 
-function patchBlob(buf, text) {
+async function patchBlob(buf, text) {
   const off = findMagic(buf);
   if (off < 0) throw new Error("magic header not found in firmware.bin (mismatched build?)");
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -158,9 +158,26 @@ function patchBlob(buf, text) {
   if (data.length >= capacity) {
     throw new Error(`ideas too large: ${data.length} of ${capacity} bytes. Trim some lines.`);
   }
+
+  const lo = off + 16;
+  const hi = off + 20 + capacity;
+  const before = buf.slice(lo, hi);
+
   dv.setUint16(off + 16, data.length, true);
   buf.set(data, off + 20);
   buf.fill(0, off + 20 + data.length, off + 20 + capacity);
+
+  // Keep the ESP32 image trailers valid: 1-byte segment XOR checksum, then
+  // 32-byte SHA256 if header byte 23 says so. Bootloader rejects on mismatch.
+  let xorDelta = 0;
+  for (let i = 0; i < before.length; i++) xorDelta ^= before[i] ^ buf[lo + i];
+  const hashAppended = buf[23] === 1;
+  buf[hashAppended ? buf.length - 33 : buf.length - 1] ^= xorDelta;
+
+  if (hashAppended) {
+    const digest = await crypto.subtle.digest("SHA-256", buf.subarray(0, buf.length - 32));
+    buf.set(new Uint8Array(digest), buf.length - 32);
+  }
 }
 
 function u8ToBinStr(u8) {
@@ -215,7 +232,7 @@ $flash.addEventListener("click", async () => {
     })));
     const text = stateToText(state);
     for (const f of files) {
-      if (f.patch) patchBlob(f.data, text);
+      if (f.patch) await patchBlob(f.data, text);
     }
     const totalBytes = files.reduce((s, f) => s + f.data.length, 0);
     const offsets    = files.reduce((acc, f, i) => {
@@ -227,7 +244,11 @@ $flash.addEventListener("click", async () => {
     const port = await navigator.serial.requestPort();
     transport = new Transport(port, true);
     const loader = new ESPLoader({ transport, baudrate: 921600, romBaudrate: 115200 });
-    await loader.main();
+    setStatus("Connecting…");
+    // Fall back to no_reset for CP210x + early-rev ESP32, where the redundant
+    // DTR/RTS toggle can leave SYNC unanswered.
+    try { await loader.main("default_reset"); }
+    catch { await loader.main("no_reset"); }
 
     setStatus("Flashing… keep the cable steady ♥");
     await loader.writeFlash({
