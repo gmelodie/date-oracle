@@ -176,15 +176,22 @@ void showResult(const char* category, const char* pick) {
   display.display();
 }
 
-void showIdle() {
+void renderIdle() {
+  static const int8_t BOB[8] = {0, 1, 2, 1, 0, -1, -2, -1};
+  int8_t bob = BOB[(millis() / 100) % 8];
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
-  drawHeart(12, 10, 3);
-  drawHeart(SCREEN_WIDTH - 12, 10, 3);
+  drawHeart(12, 10 + bob, 3);
+  drawHeart(SCREEN_WIDTH - 12, 10 + bob, 3);
   drawCentered(cats[curCat].name, 1, 4);
-  drawCentered("TAP PRG", 2, 26);
-  drawCentered("hold = change", 1, 54);
+  drawCentered("TAP: pick", 2, 22);
+  drawCentered("HOLD: next", 2, 44);
   display.display();
+}
+
+void showIdle() {
+  renderIdle();
   resultShown = false;
 }
 
@@ -272,6 +279,7 @@ void setup() {
 void loop() {
   static bool wasDown = false;
   static uint32_t downAt = 0;
+  static uint32_t lastFrame = 0;
 
   bool down = (digitalRead(BUTTON_PIN) == LOW);
 
@@ -291,4 +299,9 @@ void loop() {
   }
 
   if (resultShown && (millis() - lastAct > IDLE_MS)) showIdle();
+
+  if (!resultShown && millis() - lastFrame >= 100) {
+    lastFrame = millis();
+    renderIdle();
+  }
 }
