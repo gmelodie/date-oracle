@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "esp_sleep.h"
 #include "date_ideas_data.h"
 
 #define OLED_SDA     4
@@ -17,7 +18,7 @@
 #define SCREEN_HEIGHT 64
 #define OLED_ADDR     0x3C
 #define LONG_PRESS_MS 700
-#define IDLE_MS       30000
+#define IDLE_MS       15000 // 15s to sleep
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -243,6 +244,98 @@ void slotReveal(uint8_t cat) {
   resultShown = true;
 }
 
+void drawSleepyHeart(int16_t cx, int16_t cy, uint8_t r) {
+  drawHeart(cx, cy, r);
+  display.drawLine(cx - 13, cy - 2, cx - 6, cy - 2, SSD1306_BLACK);
+  display.drawLine(cx + 6, cy - 2, cx + 13, cy - 2, SSD1306_BLACK);
+}
+
+void drawRisingZ(int16_t x, int16_t y, uint8_t frame) {
+  for (uint8_t i = 0; i < 3; i++) {
+    int16_t phase = ((int16_t)frame + i * 14) % 42;
+    uint8_t sz = 1 + phase / 18;
+    display.setTextSize(sz);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(x + phase / 3, y - phase / 2);
+    display.print('Z');
+  }
+}
+
+void closeEyelids() {
+  for (int16_t h = 0; h <= SCREEN_HEIGHT / 2; h += 2) {
+    display.fillRect(0, 0, SCREEN_WIDTH, h, SSD1306_BLACK);
+    display.fillRect(0, SCREEN_HEIGHT - h, SCREEN_WIDTH, h, SSD1306_BLACK);
+    display.display();
+    delay(22);
+  }
+}
+
+void sleepAnimation() {
+  static const int8_t WAVE[8] = {0, 1, 2, 1, 0, -1, -2, -1};
+  const int16_t cx = SCREEN_WIDTH / 2;
+
+  for (uint8_t f = 0; f < 48; f++) {
+    int8_t amp = 4 - f / 12;
+    if (amp < 1) amp = 1;
+    int16_t cy = 28 + WAVE[f % 8] * amp;
+
+    display.clearDisplay();
+    drawSleepyHeart(cx, cy, 9);
+    drawRisingZ(cx + 16, cy - 12, f);
+    display.display();
+    delay(45);
+  }
+
+  display.clearDisplay();
+  drawSleepyHeart(cx, 26, 9);
+  drawCentered("press RST to wake", 1, 54);
+  display.display();
+  delay(1000);
+
+  closeEyelids();
+}
+
+void goToSleep() {
+  sleepAnimation();
+
+  display.ssd1306_command(SSD1306_DISPLAYOFF);
+  digitalWrite(OLED_VEXT, HIGH);   // active-LOW: HIGH cuts OLED power
+  digitalWrite(FEEDBACK_LED, LOW);
+
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);  // PRG (active-LOW) also wakes
+  esp_deep_sleep_start();
+}
+
+void drawTitle(int16_t yDate, int16_t yOracle, uint8_t heartR) {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  drawCentered("DATE", 2, yDate);
+  drawCentered("ORACLE", 2, yOracle);
+  if (heartR) {
+    drawHeart(12, 30, heartR);
+    drawHeart(SCREEN_WIDTH - 12, 30, heartR);
+  }
+}
+
+void wakeAnimation() {
+  for (uint8_t f = 0; f <= 16; f++) {
+    drawTitle(-16 + 30 * f / 16, 64 - 30 * f / 16, 0);
+    display.display();
+    delay(35);
+  }
+  for (uint8_t r = 1; r <= 5; r++) {
+    drawTitle(14, 34, r);
+    display.display();
+    delay(45);
+  }
+  drawTitle(14, 34, 5);
+  scatterSparkles(10);
+  display.display();
+  revealBang(2);
+  heartbeat();
+  delay(400);
+}
+
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(FEEDBACK_LED, OUTPUT);
@@ -264,13 +357,7 @@ void setup() {
   }
   display.setTextWrap(false);
 
-  display.clearDisplay();
-  drawHeart(28, 36, 6);
-  drawHeart(SCREEN_WIDTH - 28, 36, 6);
-  drawCentered("DATE-NIGHT", 1, 14);
-  drawCentered("ORACLE", 2, 30);
-  display.display();
-  delay(1200);
+  wakeAnimation();
 
   showIdle();
   lastAct = millis();
@@ -298,7 +385,7 @@ void loop() {
     }
   }
 
-  if (resultShown && (millis() - lastAct > IDLE_MS)) showIdle();
+  if (millis() - lastAct > IDLE_MS) goToSleep();
 
   if (!resultShown && millis() - lastFrame >= 100) {
     lastFrame = millis();

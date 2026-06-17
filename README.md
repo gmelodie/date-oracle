@@ -6,10 +6,12 @@ Flash online using [the **web flasher**](https://gmelodie.com/date-oracle)
 
 ## Controls
 
-The V2 has two onboard buttons: **RST** (just resets the chip, don't press it during use) and **PRG** (GPIO 0), the one user input.
+The V2 has two onboard buttons: **RST** and **PRG** (GPIO 0).
 
 - **Tap PRG** -> pick from current category
 - **Hold PRG >0.7s** -> next category
+- **Auto-sleep** -> after 30s with no input the oracle plays a sleep animation and enters deep sleep
+- **Press RST** (or PRG) -> wake it back up
 
 ## Editing the date ideas
 
