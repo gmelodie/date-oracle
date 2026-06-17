@@ -18,7 +18,7 @@
 #define SCREEN_HEIGHT 64
 #define OLED_ADDR     0x3C
 #define LONG_PRESS_MS 700
-#define IDLE_MS       15000 // 15s to sleep
+#define IDLE_MS       20000 // 20s to sleep
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -183,11 +183,11 @@ void renderIdle() {
 
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
-  drawHeart(12, 10 + bob, 3);
-  drawHeart(SCREEN_WIDTH - 12, 10 + bob, 3);
-  drawCentered(cats[curCat].name, 1, 4);
-  drawCentered("TAP: pick", 2, 22);
-  drawCentered("HOLD: next", 2, 44);
+  drawHeart(12, 8 + bob, 3);
+  drawHeart(SCREEN_WIDTH - 12, 8 + bob, 3);
+  uint8_t sz = strlen(cats[curCat].name) <= 10 ? 2 : 1;
+  drawCentered(cats[curCat].name, sz, 26);
+  drawCentered("hold for date type", 1, 52);
   display.display();
 }
 
@@ -365,24 +365,32 @@ void setup() {
 
 void loop() {
   static bool wasDown = false;
+  static bool longFired = false;
   static uint32_t downAt = 0;
   static uint32_t lastFrame = 0;
 
   bool down = (digitalRead(BUTTON_PIN) == LOW);
 
-  if (down && !wasDown) { downAt = millis(); wasDown = true; }
+  if (down && !wasDown) {
+    downAt = millis();
+    wasDown = true;
+    longFired = false;
+    lastAct = millis();
+  }
+
+  if (down && wasDown && !longFired && millis() - downAt >= LONG_PRESS_MS) {
+    curCat = (curCat + 1) % NUM_CATS;
+    longFired = true;
+    lastAct = millis();
+    showBanner();
+    showIdle();
+  }
 
   if (!down && wasDown) {
     uint32_t held = millis() - downAt;
     wasDown = false;
     lastAct = millis();
-    if (held >= LONG_PRESS_MS) {
-      curCat = (curCat + 1) % NUM_CATS;
-      showBanner();
-      showIdle();
-    } else if (held > 25) {
-      slotReveal(curCat);
-    }
+    if (!longFired && held > 25) slotReveal(curCat);
   }
 
   if (millis() - lastAct > IDLE_MS) goToSleep();
